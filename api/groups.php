@@ -4,6 +4,7 @@ require_once('../queries/groups.php');
 require_once('verifyToken.php');
 
 $headers = apache_request_headers();
+$data = json_decode(file_get_contents("php://input"), true);
 $groups = new Groups();
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
@@ -24,13 +25,28 @@ if($TokenAuth->tokenVerified($token) && $TokenAuth->tokenExists($token)){
     }
 
     if($requestMethod == "GET"){
-        if(isset($_GET['greek_id'])){
-            echo $groups->getGroup($_GET['greek_id']);
+        $id = htmlentities($_GET['id']) ?? null;
+        if(isset($id)){
+            echo $groups->getGroup($id);
         } else {
             
         }
     }
 
+    if($requestMethod == "PUT"){
+        $id = htmlentities($_GET['id']) ?? null;
+        $type = $data['type'];
+        if(isset($id) && isset($type)){
+            echo $groups->changePermissionGroup($id, $type);
+        }
+    }
+
+    if($requestMethod == "DELETE"){
+        $id = htmlentities($_GET['id']) ?? null;
+        if(isset($id)){
+            echo $groups->deleteGroup($id);
+        }
+    }
 
 } else {
     if($token == null){

@@ -7,7 +7,7 @@ class Comments extends Api {
     }
 
     public function getAllComments() : string {
-        $sql = "SELECT users.username, comments.content, comments.created_at, comments.likes, comments.dislikes 
+        $sql = "SELECT comments.comment_id, users.username, comments.content, comments.created_at, comments.likes, comments.dislikes 
         FROM Comments JOIN Users ON
         comments.author = users.user_id";
         $stmt = $this->conn->prepare($sql);

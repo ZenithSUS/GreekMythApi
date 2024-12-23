@@ -5,6 +5,7 @@ require_once('verifyToken.php');
 
 $headers = apache_request_headers();
 $data = json_decode(file_get_contents("php://input"), true);
+$posts = new Posts();
 
 
 $token = $headers['Authorization'] ?? null;
@@ -12,9 +13,6 @@ if(isset($headers['Authorization'])){
     $token = explode(" ", $token);
     $token = $token[1];
 } 
-
-$posts = new Posts();
-
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 if($requestMethod == "OPTIONS"){

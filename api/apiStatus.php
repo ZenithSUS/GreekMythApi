@@ -2,8 +2,9 @@
 require_once('../config.php');
 class Api extends Database {
     protected $conn;
-    private $imagePath = [
+    protected $imagePath = [
         "default_users" => "C:/xampp/htdocs/GreekMyth/img/default.jpg",
+        "default_gods" => "C:/xampp/htdocs/GreekMyth/img/hero.png",
         "admins" => "C:/xampp/htdocs/GreekMyth/img/admin/", 
         "gods" => "C:/xampp/htdocs/GreekMyth/img/gods/",
         "users" => "C:/xampp/htdocs/GreekMyth/img/u/"
@@ -76,6 +77,8 @@ class Api extends Database {
             while (isset($row[$i])) {
                 if (!empty($row[$i]['image_url'])) { 
                     $row[$i]['image_url'] = $this->imagePath['gods'] . $row[$i]['image_url'];
+                } else {
+                    $row[$i]['image_url'] = $this->imagePath['default_gods'] . $row[$i]['image_url'];
                 }
                 $i++;
             }
