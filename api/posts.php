@@ -4,6 +4,8 @@ require_once('../queries/posts.php');
 require_once('verifyToken.php');
 
 $headers = apache_request_headers();
+$data = json_decode(file_get_contents("php://input"), true);
+
 
 $token = $headers['Authorization'] ?? null;
 if(isset($headers['Authorization'])){
@@ -34,11 +36,18 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     }
     
     if($requestMethod == "PUT"){
-        
+        $type = $data['type'] ?? null;
+        $id = $_GET['id'] ?? null;
+        if(isset($id) && isset($type)){
+            echo $posts->changePermissionPost($id, $type);
+        }
     }
 
     if($requestMethod == "DELETE"){
-        
+        $id = $_GET['id'] ?? null;
+        if(isset($id)){
+            echo $posts->deletePost($id);
+        }
     }
 } else {
     if($token == null){

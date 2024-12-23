@@ -114,7 +114,7 @@ class Api extends Database {
             "status" => 200,
             "message" => "Deleted Successfully"
         );
-        header("HTTP/1.1 Modified Sucessfully");
+        header("HTTP/1.1 Deleted Sucessfully");
         return json_encode($response);
     }
     
