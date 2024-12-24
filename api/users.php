@@ -3,9 +3,12 @@ include_once('headers.php');
 require_once('../queries/users.php');
 require_once('verifyToken.php');
 
-$users = new Users();
-$requestMethod = $_SERVER["REQUEST_METHOD"];
 $headers = apache_request_headers();
+$data = json_decode(file_get_contents("php://input"), true);
+$requestMethod = $_SERVER["REQUEST_METHOD"];
+
+
+$users = new Users();
 
 $token = $headers['Authorization'] ?? null;
 if(isset($headers['Authorization'])){
@@ -24,13 +27,14 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
             echo $users->getUser($_GET['id']);
         } else if (isset($_GET['user_id'])){
             echo $users->getAdminInfo($_GET['user_id']);
-        } else {
-            echo $this->notFound();
         }
     }
     
     if($requestMethod == "POST"){
-        echo $users->getAllUsers();
+        $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
+        $page = isset($_GET['page']) ? $_GET['page'] : 1; 
+        $offset = ($page - 1) * $limit;
+        echo $users->getAllUsers($limit, $offset);
     }
     
     if($requestMethod == "DELETE"){
@@ -44,8 +48,6 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     
     if($requestMethod == "PUT"){
         $id = htmlentities($_GET['id']) ?? null;
-
-        $data = json_decode(file_get_contents("php://input"), true);
         $username = strlen(htmlentities($data['usernameEdit'])) >= 0 ? htmlentities($data['usernameEdit']) : null;
         $email = strlen(htmlentities($data['emailEdit'])) >= 0 ? htmlentities($data['emailEdit']) : null;
 

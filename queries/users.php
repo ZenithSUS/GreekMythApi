@@ -25,12 +25,8 @@ class Users extends Api {
         }
     }
 
-    public function getAllUsers() : string {
-        $sql = "SELECT users.user_id, users.username, users.email, users.joined_at, 
-        users.profile_pic, users.bio, COUNT(friends.user_id) AS totalFriends
-        FROM users
-        LEFT JOIN friends ON users.user_id = friends.user_id
-        GROUP BY users.user_id";
+    public function getAllUsers(int $limit = 0, int $offset = 0) : string {
+        $sql = $this->BuildUserQuery(null, $limit, $offset);
         $stmt = $this->conn->prepare($sql);
      
         if(!$stmt) {
@@ -38,8 +34,9 @@ class Users extends Api {
         } else {
             $stmt->execute();
             $result = $stmt->get_result();
+            $totalPages = $this->getTotalPageUser($limit);
             if($result->num_rows > 0){
-                return $this->Fetched($result, "users");
+                return $this->Fetched($result, "users", $totalPages);
             } else {
                 return $this->notFound();
             }
@@ -48,7 +45,7 @@ class Users extends Api {
     }
 
     public function getUser(string $id) : string {
-        $sql = $this->getUserQuery();
+        $sql = $this->BuildUserQuery($id);
         $stmt = $this->conn->prepare($sql);
 
         if(!$stmt){
@@ -67,16 +64,50 @@ class Users extends Api {
         }
     }
 
-    private function getUserQuery() : string {
-        return "SELECT users.username, users.email, users.bio, users.profile_pic, users.joined_at, 
-        (SELECT COUNT(posts.author) FROM posts WHERE posts.author = users.user_id) AS totalPosts, 
-        (SELECT COUNT(comments.author) FROM comments WHERE comments.author = users.user_id) AS totalComments,
-        (SELECT COUNT(friends.user_id) FROM friends WHERE friends.user_id = users.user_id) AS totalFriends,
-        (SELECT COUNT(user_groups.user_id) FROM user_groups WHERE user_groups.user_id = users.user_id) AS totalGroups
-        FROM users 
-        WHERE users.user_id = ?";
+    private function BuildUserQuery(string $id = null, int $limit = 0, int $offset = 0) : string {
+        if(isset($id) && $id !== null) {
+            return "SELECT users.username, users.email, users.bio, users.profile_pic, users.joined_at, 
+            (SELECT COUNT(posts.author) FROM posts WHERE posts.author = users.user_id) AS totalPosts, 
+            (SELECT COUNT(comments.author) FROM comments WHERE comments.author = users.user_id) AS totalComments,
+            (SELECT COUNT(friends.user_id) FROM friends WHERE friends.user_id = users.user_id) AS totalFriends,
+            (SELECT COUNT(user_groups.user_id) FROM user_groups WHERE user_groups.user_id = users.user_id) AS totalGroups
+            FROM users 
+            WHERE users.user_id = ?";
+        }
+
+        if(isset($limit) && $limit > 0){
+            return "SELECT users.user_id, users.username, users.email, users.joined_at, 
+            users.profile_pic, users.bio, COUNT(friends.user_id) AS totalFriends
+            FROM users
+            LEFT JOIN friends ON users.user_id = friends.user_id
+            GROUP BY users.user_id
+            LIMIT $limit OFFSET $offset";
+        }
+
+        return "SELECT users.user_id, users.username, users.email, users.joined_at, 
+        users.profile_pic, users.bio, COUNT(friends.user_id) AS totalFriends
+        FROM users
+        LEFT JOIN friends ON users.user_id = friends.user_id
+        GROUP BY users.user_id";
     }
 
+    private function getTotalPageUser(int $limit) : int {
+        $sql = "SELECT COUNT(*) FROM users";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt) {
+            return 0;
+        }
+        
+        if($limit > 0 && $stmt->execute()) {
+            $result = $stmt->get_result();
+            $totalRecords = $result->fetch_assoc()['COUNT(*)'];
+            $totalPages = ceil($totalRecords / $limit);
+            return $totalPages;
+        }
+
+        return 0;
+    }
     
 
     public function editUser($id, $username, $email) : string {
@@ -141,9 +172,8 @@ class Users extends Api {
             } 
             $stmt->close();
             return $this->deleteUserQuery($id);
-        } else {
-            return $this->notFound();
-        }     
+        } 
+        return $this->notFound();  
     }
 
     private function deleteUserQuery(string $id){

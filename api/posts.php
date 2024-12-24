@@ -22,20 +22,21 @@ if($requestMethod == "OPTIONS"){
 
 if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     if($requestMethod == "POST"){
-        echo $posts->getAllPosts();
+        $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
+        $page = isset($_GET['page']) ? $_GET['page'] : 1; 
+        $offset = ($page - 1) * $limit;
+        echo $posts->getAllPosts($limit, $offset);
     } 
 
     if($requestMethod == "GET"){
         if(isset($_GET['id'])){
             echo $posts->getPosts($_GET['id']);
-        } else {
-            echo $this->notFound();
         }
     }
     
     if($requestMethod == "PUT"){
-        $type = $data['type'] ?? null;
-        $id = $_GET['id'] ?? null;
+        $type = htmlentities($data['type']) ?? null;
+        $id = htmlentities($_GET['id']) ?? null;
         if(isset($id) && isset($type)){
             echo $posts->changePermissionPost($id, $type);
         }

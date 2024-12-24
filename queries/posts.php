@@ -7,11 +7,8 @@ class Posts extends Api {
         $this->conn = $this->connect();
     }
     
-    public function getAllPosts() : string {
-        $sql = "SELECT posts.post_id, users.username, posts.title, posts.content, posts.created_at, posts.likes, posts.dislikes, posts.status, greeks.name
-        FROM Users JOIN Posts ON users.user_id = posts.author
-        LEFT JOIN Greeks ON posts.greek_group = greeks.greek_id
-        ORDER BY posts.created_at DESC";
+    public function getAllPosts(int $limit = 0, int $offset = 0) : string {
+        $sql = $this->BuildPostQuery(null, $limit, $offset);
         $stmt = $this->conn->prepare($sql);
 
         if(!$stmt){
@@ -19,16 +16,14 @@ class Posts extends Api {
         } else {
             $stmt->execute();
             $result = $stmt->get_result();
-            $status = $result->num_rows > 0 ? $this->Fetched($result, "posts") : $this->notFound();
+            $totalPages = $this->getTotalPagePost($limit);
+            $status = $result->num_rows > 0 ? $this->Fetched($result, "posts", $totalPages) : $this->notFound();
             return $status;
         }
     }
 
     public function getPosts(string $id) : string {
-        $sql = "SELECT posts.post_id, posts.author, users.username, posts.title, posts.content, posts.created_at, posts.likes, posts.dislikes, posts.status, greeks.name 
-        FROM Posts JOIN Users ON users.user_id = posts.author
-        LEFT JOIN Greeks ON posts.greek_group = greeks.greek_id
-        WHERE posts.post_id = ?";
+        $sql = $this->BuildPostQuery($id);
         $stmt = $this->conn->prepare($sql);
 
         if(!$stmt){
@@ -72,6 +67,45 @@ class Posts extends Api {
             $stmt->bind_param('s', $id);
             return $stmt->execute() ? $this->editedResource() : $this->notFound();
         }
+    }
+
+    private function BuildPostQuery(string $id = null, int $limit = 0, int $offset = 0) : string {
+        if(isset($id) && $id !== null){
+            return "SELECT posts.post_id, posts.author, users.username, posts.title, posts.content, posts.created_at, posts.likes, posts.dislikes, posts.status, greeks.name 
+            FROM Posts JOIN Users ON users.user_id = posts.author
+            LEFT JOIN Greeks ON posts.greek_group = greeks.greek_id
+            WHERE posts.post_id = ?";
+        }
+
+        if(isset($limit) && $limit > 0) {
+            return "SELECT posts.post_id, users.username, posts.title, posts.content, posts.created_at, posts.likes, posts.dislikes, posts.status, greeks.name
+            FROM Users JOIN Posts ON users.user_id = posts.author
+            LEFT JOIN Greeks ON posts.greek_group = greeks.greek_id
+            ORDER BY posts.created_at DESC
+            LIMIT $limit OFFSET $offset";
+        }
+
+        return "SELECT posts.post_id, users.username, posts.title, posts.content, posts.created_at, posts.likes, posts.dislikes, posts.status, greeks.name
+        FROM Users JOIN Posts ON users.user_id = posts.author
+        LEFT JOIN Greeks ON posts.greek_group = greeks.greek_id
+        ORDER BY posts.created_at DESC";
+    }
+
+    private function getTotalPagePost(int $limit) : int {
+        $sql = "SELECT COUNT(*) FROM posts";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt) {
+            return 0;
+        }
+
+        if($limit > 0 && $stmt->execute()) {
+            $result = $stmt->get_result();
+            $totalRecords = $result->fetch_assoc()['COUNT(*)'];
+            $totalPages = ceil($totalRecords / $limit);
+            return $totalPages;
+        }
+        return 0;
     }
 
 

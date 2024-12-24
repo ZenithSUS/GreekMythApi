@@ -45,7 +45,7 @@ class Api extends Database {
         return json_encode($response);
     }
 
-    protected function Fetched($result, string $type) : string{
+    protected function Fetched($result, string $type = null, int $page = 0) : string{
         $row = $result->fetch_all(MYSQLI_ASSOC);
 
         if ($type === "admins") {
@@ -83,11 +83,13 @@ class Api extends Database {
                 $i++;
             }
         }
+
         
         $response = array(
             "status" => 200,
             "message" => "success",
-            "data" => $row
+            "data" => $row,
+            "totalPages" => $page
         );
         header("HTTP/1.1 200 Fetched Successfully!");
         return json_encode($response);

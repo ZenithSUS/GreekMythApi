@@ -21,15 +21,16 @@ if($requestMethod == "OPTIONS"){
 
 if($TokenAuth->tokenVerified($token) && $TokenAuth->tokenExists($token)){
     if($requestMethod == "POST"){
-        echo $groups->getAllGroups();
+        $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
+        $page = isset($_GET['page']) ? $_GET['page'] : 1; 
+        $offset = ($page - 1) * $limit;
+        echo $groups->getAllGroups($limit, $offset);
     }
 
     if($requestMethod == "GET"){
         $id = htmlentities($_GET['id']) ?? null;
         if(isset($id)){
             echo $groups->getGroup($id);
-        } else {
-            
         }
     }
 
