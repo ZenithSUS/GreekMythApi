@@ -89,8 +89,10 @@ class Api extends Database {
             "status" => 200,
             "message" => "success",
             "data" => $row,
-            "totalPages" => $page
         );
+        if($page > 0) {
+            $response['totalPages'] = $page;
+        }
         header("HTTP/1.1 200 Fetched Successfully!");
         return json_encode($response);
     }

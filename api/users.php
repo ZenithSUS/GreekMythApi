@@ -48,11 +48,18 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     
     if($requestMethod == "PUT"){
         $id = htmlentities($_GET['id']) ?? null;
-        $username = strlen(htmlentities($data['usernameEdit'])) >= 0 ? htmlentities($data['usernameEdit']) : null;
-        $email = strlen(htmlentities($data['emailEdit'])) >= 0 ? htmlentities($data['emailEdit']) : null;
+        $type = htmlentities(isset($data['type'])) ? htmlentities($data['type']) : null;
+        
+        if(isset($id) && $id !== null && $type === "user" || $type === "admin"){
+            $username = strlen(htmlentities($data['usernameEdit'])) > 0 ? htmlentities($data['usernameEdit']) : null;
+            $email = strlen(htmlentities($data['emailEdit'])) > 0 ? htmlentities($data['emailEdit']) : null;
+            echo $users->editUser($id, $username, $email, $type); 
+        }
 
-        if(isset($id) && $id !== null){
-            echo $users->editUser($id, $username, $email);
+        if(isset($id) && $id !== null && $type === "adminPass"){
+            $newPassword = strlen(htmlentities($data['newpassword'])) > 0 ? htmlentities($data['newpassword']) : null;
+            $confirmNewPassword = strlen(htmlentities($data['newconfirmpassword'])) > 0 ? htmlentities($data['newconfirmpassword']) : null;
+            echo $users->changeAdminPassword($id, $newPassword, $confirmNewPassword);
         }
     }
 } else {
@@ -72,6 +79,4 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
         echo json_encode($response);
     }
 }
-
-
 ?>
