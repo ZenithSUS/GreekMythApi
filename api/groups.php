@@ -4,7 +4,6 @@ require_once('../queries/groups.php');
 require_once('verifyToken.php');
 
 $headers = apache_request_headers();
-$data = json_decode(file_get_contents("php://input"), true);
 $groups = new Groups();
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];
@@ -20,25 +19,25 @@ if($requestMethod == "OPTIONS"){
 }
 
 if($TokenAuth->tokenVerified($token) && $TokenAuth->tokenExists($token)){
-    if($requestMethod == "POST"){
+    if($requestMethod == "POST" && !isset($_GET['id'])){
         $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
         $page = isset($_GET['page']) ? $_GET['page'] : 1; 
         $offset = ($page - 1) * $limit;
         echo $groups->getAllGroups($limit, $offset);
     }
 
+    if($requestMethod == "POST" && isset($_GET['id'])){
+        $id = htmlentities($_GET['id']) ?? null;
+        $type = $_POST['type'];
+        if(isset($id) && isset($type)){
+            echo $groups->changePermissionGroup($id, $type);
+        }
+    }
+
     if($requestMethod == "GET"){
         $id = htmlentities($_GET['id']) ?? null;
         if(isset($id)){
             echo $groups->getGroup($id);
-        }
-    }
-
-    if($requestMethod == "PUT"){
-        $id = htmlentities($_GET['id']) ?? null;
-        $type = $data['type'];
-        if(isset($id) && isset($type)){
-            echo $groups->changePermissionGroup($id, $type);
         }
     }
 

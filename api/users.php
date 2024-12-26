@@ -4,9 +4,7 @@ require_once('../queries/users.php');
 require_once('verifyToken.php');
 
 $headers = apache_request_headers();
-$data = json_decode(file_get_contents("php://input"), true);
 $requestMethod = $_SERVER["REQUEST_METHOD"];
-
 
 $users = new Users();
 
@@ -22,19 +20,37 @@ if($requestMethod == "OPTIONS") {
 }
 
 if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
+
+    if($requestMethod == "POST" && !isset($_GET['id'])){
+        $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
+        $page = isset($_GET['page']) ? $_GET['page'] : 1; 
+        $offset = ($page - 1) * $limit;
+        echo $users->getAllUsers($limit, $offset);
+    }
+
+    if($requestMethod == "POST" && isset($_GET['id'])){
+        $id = htmlentities($_GET['id']) ?? null;
+        $type = htmlentities(isset($_POST['type'])) ? htmlentities($_POST['type']) : null;
+        
+        if(isset($id) && $id !== null && ($type === "user" || $type === "admin")){
+            $username = strlen(htmlentities($_POST['usernameEdit'])) > 0 ? htmlentities($_POST['usernameEdit']) : null;
+            $email = strlen(htmlentities($_POST['emailEdit'])) > 0 ? htmlentities($_POST['emailEdit']) : null;
+            echo $users->editUser($id, $username, $email, $type); 
+        }
+
+        if(isset($id) && $id !== null && $type === "adminPass"){
+            $newPassword = strlen(htmlentities($_POST['newpassword'])) > 0 ? htmlentities($_POST['newpassword']) : null;
+            $confirmNewPassword = strlen(htmlentities($_POST['newconfirmpassword'])) > 0 ? htmlentities($_POST['newconfirmpassword']) : null;
+            echo $users->changeAdminPassword($id, $newPassword, $confirmNewPassword);
+        }
+    }
+
     if($requestMethod == "GET") {
         if(isset($_GET['id'])){
             echo $users->getUser($_GET['id']);
         } else if (isset($_GET['user_id'])){
             echo $users->getAdminInfo($_GET['user_id']);
         }
-    }
-    
-    if($requestMethod == "POST"){
-        $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
-        $page = isset($_GET['page']) ? $_GET['page'] : 1; 
-        $offset = ($page - 1) * $limit;
-        echo $users->getAllUsers($limit, $offset);
     }
     
     if($requestMethod == "DELETE"){
@@ -46,22 +62,6 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
         
     }
     
-    if($requestMethod == "PUT"){
-        $id = htmlentities($_GET['id']) ?? null;
-        $type = htmlentities(isset($data['type'])) ? htmlentities($data['type']) : null;
-        
-        if(isset($id) && $id !== null && $type === "user" || $type === "admin"){
-            $username = strlen(htmlentities($data['usernameEdit'])) > 0 ? htmlentities($data['usernameEdit']) : null;
-            $email = strlen(htmlentities($data['emailEdit'])) > 0 ? htmlentities($data['emailEdit']) : null;
-            echo $users->editUser($id, $username, $email, $type); 
-        }
-
-        if(isset($id) && $id !== null && $type === "adminPass"){
-            $newPassword = strlen(htmlentities($data['newpassword'])) > 0 ? htmlentities($data['newpassword']) : null;
-            $confirmNewPassword = strlen(htmlentities($data['newconfirmpassword'])) > 0 ? htmlentities($data['newconfirmpassword']) : null;
-            echo $users->changeAdminPassword($id, $newPassword, $confirmNewPassword);
-        }
-    }
 } else {
     if($token == null){
         $response = array(

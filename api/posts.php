@@ -4,7 +4,6 @@ require_once('../queries/posts.php');
 require_once('verifyToken.php');
 
 $headers = apache_request_headers();
-$data = json_decode(file_get_contents("php://input"), true);
 $posts = new Posts();
 
 
@@ -21,24 +20,24 @@ if($requestMethod == "OPTIONS"){
 }
 
 if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
-    if($requestMethod == "POST"){
+    if($requestMethod == "POST" && !isset($_GET['id'])){
         $limit = isset($_GET['limit']) && $_GET['limit'] !== null ? 10 : 0;
         $page = isset($_GET['page']) ? $_GET['page'] : 1; 
         $offset = ($page - 1) * $limit;
         echo $posts->getAllPosts($limit, $offset);
-    } 
+    }
+    
+    if($requestMethod == "POST" && isset($_GET['id'])){
+        $type = htmlentities($_POST['type']) ?? null;
+        $id = htmlentities($_GET['id']) ?? null;
+        if(isset($id) && isset($type)){
+            echo $posts->changePermissionPost($id, $type);
+        }
+    }
 
     if($requestMethod == "GET"){
         if(isset($_GET['id'])){
             echo $posts->getPosts($_GET['id']);
-        }
-    }
-    
-    if($requestMethod == "PUT"){
-        $type = htmlentities($data['type']) ?? null;
-        $id = htmlentities($_GET['id']) ?? null;
-        if(isset($id) && isset($type)){
-            echo $posts->changePermissionPost($id, $type);
         }
     }
 
