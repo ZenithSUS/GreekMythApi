@@ -42,11 +42,14 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     }
 
     if($requestMethod == "DELETE"){
-        $id = $_GET['id'] ?? null;
-        if(isset($id)){
+        $id = htmlentities($_GET['id']) ?? null;
+        $type = htmlentities($_GET['type']) ?? null;
+
+        if((isset($id) && $id !== null) && $type === "delete"){
             echo $posts->deletePost($id);
         }
     }
+    
 } else {
     if($token == null){
         $response = array(

@@ -125,7 +125,6 @@ class Users extends Api {
             $totalPages = ceil($totalRecords / $limit);
             return $totalPages;
         }
-
         return 0;
     }
     
@@ -195,7 +194,57 @@ class Users extends Api {
         return $this->notFound();
     }
 
-    public function deleteUser($id){
+    public function check_Delete_Account_PasswordFields(string $id, ?string $password = null, ?string $confirmPassword = null) : string {
+        $this->check_Admin_Delete_Password_Fields($id, $password, $confirmPassword);
+        if(!empty($this->errors)){
+            return $this->queryFailed("DeleteAdmin", $this->errors);
+        }
+
+        if(!$this->verifyPassword($id, $password)){
+            $this->errors['delstatus'] = "Wrong Password!";
+        }
+
+        if(!empty($this->errors)){
+            return $this->queryFailed("DeleteAdmin", $this->errors);
+        }
+
+        return $this->success();
+    }
+
+    public function deleteAdminUser(string $id) : string {
+        $sql = "SELECT image_src FROM admin_users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $id);
+
+        if(!$stmt) {
+            return $this->queryFailed("Delete");
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $image = $row['image_src'];
+
+        if($result->num_rows > 0){
+            if($image !== null){
+                unlink($this->imagePath['users'] . $image);
+            } 
+            $stmt->close();
+            return $this->deleteAdminUserQuery($id);
+        } 
+        return $this->notFound(); 
+    }
+
+    private function deleteAdminUserQuery(string $id) {
+        $sql = "DELETE FROM admin_users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $id);
+
+        $stmt->execute();
+        return $stmt->affected_rows > 0 ? $this->deletedResource() : $this->notFound();
+    }
+
+    public function deleteUser(string $id) : string {
         $sql = "SELECT profile_pic FROM users WHERE user_id = ?";
         $stmt = $this->conn->prepare($sql);
 
@@ -283,7 +332,7 @@ class Users extends Api {
         }
     }
 
-    private function checkPasswordFields(string $id, string $newPassword = null, string $confirmNewPassword = null) : void {
+    private function checkPasswordFields(string $id, ?string $newPassword = null, ?string $confirmNewPassword = null) : void {
         // Check if new password is empty 
         if(empty($newPassword) && $newPassword === null) {
             $this->errors['newpassword'] = "Please fill the password";
@@ -312,6 +361,23 @@ class Users extends Api {
         }
     }
 
+    private function check_Admin_Delete_Password_Fields(string $id, ?string $password = null, ?string $confirmPassword = null) : void {
+        // Check if new password is empty 
+        if(empty($password) && $password === null) {
+            $this->errors['password'] = "Please fill the password";
+        } 
+    
+        // Check if new confirm password is empty
+        if(empty($confirmPassword) && $confirmPassword === null) {
+            $this->errors['confirmpassword'] = "Please fill the confirm password";
+        } 
+    
+        // Check if new password and confirm password match
+        if($confirmPassword !== null && $confirmPassword !== $password) {
+            $this->errors['confirmpassword'] = "Password doesn't match";
+        }
+    }
+
     private function currentPassword(string $id, string $newPassword) : bool {
         $sql = "SELECT password FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -324,6 +390,20 @@ class Users extends Api {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
         return password_verify($newPassword, $row['password']) ? true : false;
+    }
+
+    private function verifyPassword(string $id, string $password) : bool {
+        $sql = "SELECT password FROM admin_users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $id);
+
+        if(!$stmt){
+            return false;
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return password_verify($password, $row['password']) ? true : false;
     }
 
     private function changePasswordQuery() : string {

@@ -58,6 +58,8 @@ class Register extends Api {
             } else {
                 $imageName = $imageInfo['name'];
             }
+        } else {
+            $imageName = null;
         }
         
 

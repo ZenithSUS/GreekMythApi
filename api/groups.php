@@ -43,7 +43,8 @@ if($TokenAuth->tokenVerified($token) && $TokenAuth->tokenExists($token)){
 
     if($requestMethod == "DELETE"){
         $id = htmlentities($_GET['id']) ?? null;
-        if(isset($id)){
+        $type = htmlentities($_GET['type']) ?? null;
+        if((isset($id) && $id !== null) && $type === "delete"){
             echo $groups->deleteGroup($id);
         }
     }

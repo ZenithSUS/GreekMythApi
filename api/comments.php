@@ -44,7 +44,9 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
 
     if($requestMethod == "DELETE") {
         $id = htmlentities($_GET['id']) ?? null;
-        if(isset($id)){
+        $type = htmlentities($_GET['type']) ?? null;
+
+        if((isset($id) && $id !== null) && $type === "delete"){
             echo $commments->deleteComment($id);
         }
     }

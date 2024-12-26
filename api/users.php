@@ -43,6 +43,12 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
             $confirmNewPassword = strlen(htmlentities($_POST['newconfirmpassword'])) > 0 ? htmlentities($_POST['newconfirmpassword']) : null;
             echo $users->changeAdminPassword($id, $newPassword, $confirmNewPassword);
         }
+
+        if(isset($id) && $id !== null && $type === "deleteAdmin"){
+            $password = strlen(htmlentities($_POST['password'])) > 0 ? htmlentities($_POST['password']) : null;
+            $confirmPassword = strlen(htmlentities($_POST['confirmpassword'])) > 0 ? htmlentities($_POST['confirmpassword']) : null;
+            echo $users->check_Delete_Account_PasswordFields($id, $password, $confirmPassword);
+        }
     }
 
     if($requestMethod == "GET") {
@@ -55,11 +61,15 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
     
     if($requestMethod == "DELETE"){
         $id = htmlentities($_GET['id']) ?? null;
+        $type = htmlentities($_GET['type']) ?? null;
 
-        if(isset($id) && $id != null){
+        if((isset($id) && $id !== null) && $type === "user"){
             echo $users->deleteUser($id);
         }
         
+        if((isset($id) && $id !== null) && $type === "admin"){
+            echo $users->deleteAdminUser($id);
+        }
     }
     
 } else {

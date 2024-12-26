@@ -11,7 +11,7 @@ class Api extends Database {
     ];
 
     protected function queryFailed(string $type = null, array $errors = null) : string {
-        if($type == "Edit"){
+        if($type == "Edit" || $type == "DeleteAdmin"){
             $response = array(
                 "status" => 422,
                 "message" => "Unprocessable Content",
