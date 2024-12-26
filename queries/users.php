@@ -227,7 +227,7 @@ class Users extends Api {
 
         if($result->num_rows > 0){
             if($image !== null){
-                unlink($this->imagePath['users'] . $image);
+                unlink($this->imagePath['admins'] . $image);
             } 
             $stmt->close();
             return $this->deleteAdminUserQuery($id);
