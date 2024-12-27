@@ -339,7 +339,7 @@ class Users extends Api {
         } 
     
         // Validate new password
-        if($newPassword !== null && !$this->validateAdminPassword($this->checkAdminPassword($newPassword))) {
+        if($newPassword !== null && $this->validateAdminPassword($this->checkAdminPassword($newPassword))) {
             foreach($this->checkAdminPassword($newPassword) as $type => $hasType){
                 if(!$hasType) $this->errors['passwordValid'][$type] = $type . " is required";
             }

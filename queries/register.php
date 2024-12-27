@@ -137,10 +137,12 @@ class Register extends Api {
     }
 
     public function checkUsername(string $username) : array {
+        $uppercase = !preg_match('/[A-Z]/', $username);
         $specialchars = !preg_match('/[^A-Za-z0-9]/', $username);
         $usernameLength = strlen($username) < 5;
         
         return [
+            "Uppercase" => $uppercase,
             "Special characters" => $specialchars,
             "5 characters" => $usernameLength
         ];
