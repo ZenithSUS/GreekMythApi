@@ -49,6 +49,10 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
             $confirmPassword = strlen(htmlentities($_POST['confirmpassword'])) > 0 ? htmlentities($_POST['confirmpassword']) : null;
             echo $users->check_Delete_Account_PasswordFields($id, $password, $confirmPassword);
         }
+
+        if(isset($id) && $id !== null && ($type === "light" || $type === "dark")){
+            echo $users->changeThemeAdmin($id, $type); 
+        }
     }
 
     if($requestMethod == "GET") {

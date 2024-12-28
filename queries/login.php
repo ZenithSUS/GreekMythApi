@@ -30,6 +30,8 @@ class Login extends Api {
                     $token = bin2hex(random_bytes(32));
                     $data['token'] = $token;
                     $data['user_id'] = $row['id'];
+                    $theme = $this->getAdminUITheme($data['user_id']);
+                    $data['theme'] = $theme['theme'];
 
                     $sql = "UPDATE Admin_Users SET token = ?, verified = 1 WHERE id = ?";
                     $stmt = $this->conn->prepare($sql);
@@ -78,6 +80,21 @@ class Login extends Api {
             $status = $stmt->execute() ? $this->success() : $this->queryFailed();
             return $status;
         }
+    }
+
+    private function getAdminUITheme(string $id) : array {
+        $sql = "SELECT * FROM admin_settings WHERE admin_id = ?";
+        $stmt = $this->conn->prepare($sql);
+        
+        if(!$stmt) {
+            return ["theme" => 0];
+        }
+
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        return ["theme" => $row['dark_mode']];
     }
 
 }

@@ -7,7 +7,11 @@ class Users extends Api {
     }
 
     public function getAdminInfo(string $id) : string {
-        $sql = "SELECT username, image_src, email FROM Admin_Users WHERE id = ?";
+        $sql = "SELECT admin_users.username, admin_users.image_src, admin_users.email, admin_settings.dark_mode
+        FROM Admin_Users 
+        JOIN Admin_Settings ON
+        admin_users.id = admin_settings.admin_id
+        WHERE admin_users.id = ?";
         $stmt = $this->conn->prepare($sql);
 
         if(!$stmt) {
@@ -267,6 +271,19 @@ class Users extends Api {
         return $this->notFound();  
     }
 
+    public function changeThemeAdmin(string $id, string $type) : string {
+        $sql = $this->changeThemeAdminQuery($type);
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $id);
+
+        if(!$stmt){
+            return $this->queryFailed();
+        }
+
+        $stmt->execute();
+        return $stmt->affected_rows > 0 ? $this->editedResource() : $this->queryFailed();
+    }
+
     private function getUserInfoQuery(string $type) : string {
         return $type === "user" ? "SELECT username, email FROM users WHERE user_id = ?" : "SELECT username, email FROM admin_users WHERE id = ?";
     }
@@ -408,6 +425,11 @@ class Users extends Api {
 
     private function changePasswordQuery() : string {
         return "UPDATE admin_users SET password = ? WHERE id = ?";
+    }
+
+    private function changeThemeAdminQuery(string $type) : string {
+        $switch = $type === "dark" ? 1 : 0;
+        return "UPDATE admin_settings SET dark_mode = $switch WHERE admin_id = ?";
     }
 
     private function checkEmail(string $email) : bool{
