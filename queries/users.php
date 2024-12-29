@@ -271,10 +271,10 @@ class Users extends Api {
         return $this->notFound();  
     }
 
-    public function changeThemeAdmin(string $id, string $type) : string {
+    public function changeThemeAdmin(string $id, ?string $type = null, ?string $fontstyle = null) : string {
         $sql = $this->changeThemeAdminQuery($type);
         $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param('s', $id);
+        $stmt->bind_param('ss', $fontstyle, $id);
 
         if(!$stmt){
             return $this->queryFailed();
@@ -427,9 +427,9 @@ class Users extends Api {
         return "UPDATE admin_users SET password = ? WHERE id = ?";
     }
 
-    private function changeThemeAdminQuery(string $type) : string {
+    private function changeThemeAdminQuery(?string $type) : string {
         $switch = $type === "dark" ? 1 : 0;
-        return "UPDATE admin_settings SET dark_mode = $switch WHERE admin_id = ?";
+        return "UPDATE admin_settings SET dark_mode = $switch, font_style = ? WHERE admin_id = ?";
     }
 
     private function checkEmail(string $email) : bool{

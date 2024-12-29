@@ -10,7 +10,10 @@ class Login extends Api {
 
     public function login(string $usernameOrEmail, string $password) : string {
         try {
-            $sql = "SELECT * FROM Admin_Users WHERE username = ? OR email = ?";
+            $sql = "SELECT admin_users.*, admin_settings.dark_mode , admin_settings.font_style
+            FROM Admin_Users JOIN Admin_Settings ON
+            admin_users.id = admin_settings.admin_id
+            WHERE admin_users.username = ? OR admin_users.email = ?";
             $stmt = $this->conn->prepare($sql);
 
             if (!$stmt) {
@@ -30,8 +33,8 @@ class Login extends Api {
                     $token = bin2hex(random_bytes(32));
                     $data['token'] = $token;
                     $data['user_id'] = $row['id'];
-                    $theme = $this->getAdminUITheme($data['user_id']);
-                    $data['theme'] = $theme['theme'];
+                    $data['theme'] = $row['dark_mode'];
+                    $data['font_style'] = $row['font_style'];
 
                     $sql = "UPDATE Admin_Users SET token = ?, verified = 1 WHERE id = ?";
                     $stmt = $this->conn->prepare($sql);
@@ -82,20 +85,6 @@ class Login extends Api {
         }
     }
 
-    private function getAdminUITheme(string $id) : array {
-        $sql = "SELECT * FROM admin_settings WHERE admin_id = ?";
-        $stmt = $this->conn->prepare($sql);
-        
-        if(!$stmt) {
-            return ["theme" => 0];
-        }
-
-        $stmt->bind_param('s', $id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        return ["theme" => $row['dark_mode']];
-    }
 
 }
 

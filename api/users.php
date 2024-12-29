@@ -51,7 +51,8 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
         }
 
         if(isset($id) && $id !== null && ($type === "light" || $type === "dark")){
-            echo $users->changeThemeAdmin($id, $type); 
+            $fontstyle = htmlentities(isset($_POST['font_style'])) ? htmlentities($_POST['font_style']) : null;
+            echo $users->changeThemeAdmin($id, $type, $fontstyle); 
         }
     }
 
