@@ -110,7 +110,7 @@ class Api extends Database {
     protected function editedResource(){
         $response = array(
             "status" => 200,
-            "message" => "Modfied Successfully"
+            "message" => urlencode(htmlspecialchars("Modfied Successfully", ENT_QUOTES, 'UTF-8'))
         );
         header("HTTP/1.1 Modified Sucessfully");
         return json_encode($response);
@@ -119,7 +119,7 @@ class Api extends Database {
     protected function deletedResource(){
         $response = array(
             "status" => 200,
-            "message" => "Deleted Successfully"
+            "message" => urlencode(htmlspecialchars("Deleted Successfully", ENT_QUOTES, 'UTF-8'))
         );
         header("HTTP/1.1 Deleted Sucessfully");
         return json_encode($response);
