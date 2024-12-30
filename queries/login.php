@@ -46,7 +46,7 @@ class Login extends Api {
                         $stmt->execute();
                         $response = array(
                             'status' => 200,
-                            'message' => 'Login successful',
+                            'message' => 'Logged in as '. $row['username'],
                             'data' => $data
                         );
                         $stmt->close();

@@ -63,11 +63,11 @@ class Register extends Api {
         }
         
 
-        $status = empty($this->errors) ? $this->register($imageName) : $this->regError($this->errors); 
+        $status = empty($this->errors) ? $this->register($imageName, $this->username, $this->email) : $this->regError($this->errors); 
         echo $status;
     }
 
-    public function register(string $imageName = null) : string {
+    public function register(?string $imageName = null, ?string $username = null, ?string $email = null) : string {
         $sql = "INSERT INTO Admin_Users (id, username, email, password, image_src)
         VALUES (UUID(), ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($sql);
@@ -78,20 +78,58 @@ class Register extends Api {
             $hashed_password = password_hash($this->password, PASSWORD_DEFAULT);
             $stmt->bind_param('ssss', $this->username, $this->email, $hashed_password, $imageName);
             $stmt->execute();
+            $admin_id = $this->getAdminUserId($username, $email);
+            $this->insertAdminSettings($admin_id);
 
             $status = !$stmt ? $this->queryFailed() : $this->created();
             return $status;
         }
     }
 
-    public function validateUsername(array $username) : bool {
+    private function insertAdminSettings(?string $id = null) : void {
+        $sql = "INSERT INTO admin_settings (admin_id) VALUES (?)";
+        $stmt = $this->conn->prepare($sql);
+    
+        if(!$stmt) {
+            $this->queryFailed();
+            return;
+        }
+    
+        $stmt->bind_param('s', $id);
+        $stmt->execute();
+    
+        if ($stmt->affected_rows > 0) {
+            $stmt->close();
+        } else {
+            $this->queryFailed();
+        }
+    }
+
+    private function getAdminUserId(?string $username = null, ?string $email = null): ?string {
+        $sql = "SELECT id FROM admin_users WHERE username = ? AND email = ?";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt) {
+            return null;
+        }
+
+        $stmt->bind_param('ss', $username, $email);
+        if($stmt->execute()) {
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            return $row['id'];
+        }
+        return null;
+    }
+
+    private function validateUsername(array $username) : bool {
         foreach(array_keys($username) as $hasType) {
             $status = $hasType ? true : false;
         }
         return $status;
     }
 
-    public function userExists(string $username) : bool {
+    private function userExists(string $username) : bool {
         $sql = "SELECT username FROM Admin_Users WHERE username = ?";
         $stmt = $this->conn->prepare($sql);
 
@@ -107,7 +145,7 @@ class Register extends Api {
         }
     }
 
-    public function emailExists(string $email) : bool {
+    private function emailExists(string $email) : bool {
         $sql = "SELECT email FROM Admin_Users WHERE email = ?";
         $stmt = $this->conn->prepare($sql);
 
@@ -123,12 +161,12 @@ class Register extends Api {
         }
     }
 
-    public function validateEmail(string $email) : bool {
+    private function validateEmail(string $email) : bool {
         $status = filter_var($email, FILTER_VALIDATE_EMAIL) ? true : false;
         return $status;
     }
 
-    public function validatePassword(array $password) : bool {
+    private function validatePassword(array $password) : bool {
   
         foreach (array_keys($password) as $hasType){
             $status = $hasType ? true : false;
@@ -136,7 +174,7 @@ class Register extends Api {
         return $status;
     }
 
-    public function checkUsername(string $username) : array {
+    private function checkUsername(string $username) : array {
         $uppercase = !preg_match('/[A-Z]/', $username);
         $specialchars = !preg_match('/[^A-Za-z0-9]/', $username);
         $usernameLength = strlen($username) < 5;
@@ -148,7 +186,7 @@ class Register extends Api {
         ];
     }
 
-    public function checkPassword(string $password) : array {
+    private function checkPassword(string $password) : array {
         $uppercase = preg_match('/[A-Z]/', $password);
         $lowercase = preg_match('/[a-z]/', $password);
         $specialchars = preg_match('/[^A-Za-z0-9]/', $password);
@@ -162,7 +200,7 @@ class Register extends Api {
        ];
     }
 
-    public function checkImage() : array {
+    private function checkImage() : array {
         $fileName = $this->image['name'];
         $fileSize = $this->image['size'];
         $fileTmpName = $this->image['tmp_name'];
@@ -191,10 +229,7 @@ class Register extends Api {
         } else {
             return ['name' => $fileNameNew];
         }
-       
-        
     }
-
 }
 
 ?>
