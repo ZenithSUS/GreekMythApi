@@ -35,7 +35,8 @@ if($TokenAuth->tokenExists($token) && $TokenAuth->tokenVerified($token)){
         if(isset($id) && $id !== null && ($type === "user" || $type === "admin")){
             $username = strlen(htmlentities($_POST['usernameEdit'])) > 0 ? htmlentities($_POST['usernameEdit']) : null;
             $email = strlen(htmlentities($_POST['emailEdit'])) > 0 ? htmlentities($_POST['emailEdit']) : null;
-            echo $users->editUser($id, $username, $email, $type); 
+            $image = isset($_FILES['image']) ? $_FILES['image'] : null;
+            echo $users->editUser($id, $username, $email, $type, $image); 
         }
 
         if(isset($id) && $id !== null && $type === "adminPass"){

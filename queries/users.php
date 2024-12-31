@@ -133,7 +133,7 @@ class Users extends Api {
     }
     
 
-    public function editUser(string $id, ?string $username = null, ?string $email = null, string $type) : string {
+    public function editUser(string $id, ?string $username = null, ?string $email = null, string $type, $image = null) : string {
         $this->checkFields($username, $email, $type);
         if(!empty($this->errors)){
             return $this->queryFailed("Edit", $this->errors);
@@ -169,10 +169,16 @@ class Users extends Api {
         $stmt->bind_param('sss', $username, $email, $id);
         $stmt->execute();
             
-        if($stmt->affected_rows > 0){
+        if($stmt->affected_rows > 0 || $this->changeImage($id, $image) !== false){
             $stmt->close();
             return $this->editedResource();
-        } 
+        }
+        
+        if(!empty($this->errors)){
+            $stmt->close();
+            return $this->queryFailed("Edit", $this->errors);
+        }
+
 
         $sql = $this->getUserInfoQuery($type);
         $stmt = $this->conn->prepare($sql);
@@ -199,7 +205,7 @@ class Users extends Api {
     }
 
     public function check_Delete_Account_PasswordFields(string $id, ?string $password = null, ?string $confirmPassword = null) : string {
-        $this->check_Admin_Delete_Password_Fields($id, $password, $confirmPassword);
+        $this->check_Admin_Delete_Password_Fields($password, $confirmPassword);
         if(!empty($this->errors)){
             return $this->queryFailed("DeleteAdmin", $this->errors);
         }
@@ -378,7 +384,7 @@ class Users extends Api {
         }
     }
 
-    private function check_Admin_Delete_Password_Fields(string $id, ?string $password = null, ?string $confirmPassword = null) : void {
+    private function check_Admin_Delete_Password_Fields(?string $password = null, ?string $confirmPassword = null) : void {
         // Check if new password is empty 
         if(empty($password) && $password === null) {
             $this->errors['password'] = "Please fill the password";
@@ -482,6 +488,79 @@ class Users extends Api {
             "Special characters" => $specialchars,
             "Numeric value" => $numericVal
        ];
+    }
+
+    private function changeImage(string $id, $image = null) : bool {
+        if($image === null){
+            return false;
+        }
+
+        $fileName = $image['name'];
+        $fileSize = $image['size'];
+        $fileTmpName = $image['tmp_name'];
+        $fileError = $image['error'];
+        $fileExt = explode('.', $fileName);
+        $fileActualExt = strtolower(end($fileExt));
+        $fileNameNew = uniqid('', true) . "." . $fileActualExt;
+        $targetDirectory = 'C:/xampp/htdocs/GreekMyth/img/admin/' . $fileNameNew; 
+        
+        $allowed = array("jpeg", "png", "jpg");
+    
+        if ($fileError !== UPLOAD_ERR_OK) {
+            $this->errors['imageEdit'] = 'Error Uploading Image!';
+        }
+    
+        if (!in_array($fileActualExt, $allowed)) {
+            $this->errors['imageEdit'] = 'Invalid Extension!';
+        } 
+    
+        if ($fileSize > 5000000) {
+            $this->errors['imageEdit'] = 'Image size too big!';
+        }
+
+
+        if(!empty($this->errors)){
+            return false;
+        }
+
+        if(!move_uploaded_file($fileTmpName, $targetDirectory)) {
+            $this->errors['imageEdit'] = 'Failed to upload image';
+            return false;
+        }
+
+        $this->deleteExistingImage($id);
+        $sql = "UPDATE admin_users SET image_src = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt){
+            return false;
+        }
+
+        $stmt->bind_param('ss', $fileNameNew, $id);
+        $stmt->execute();
+
+        return $stmt->affected_rows > 0 ? true : false;
+    }
+
+    private function deleteExistingImage(string $id) : void {
+        $sql = "SELECT image_src FROM admin_users WHERE id = ?";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param('s', $id);
+
+        if(!$stmt) {
+            $this->queryFailed();
+        }
+
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $image = $row['image_src'];
+
+        if($result->num_rows > 0){
+            if($image !== null){
+                unlink($this->imagePath['admins'] . $image);
+            } 
+        }
     }
 }
 ?>

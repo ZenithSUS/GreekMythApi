@@ -18,6 +18,15 @@ if ($requestMethod == "OPTIONS") {
     exit;
 }
 
+function generateVerificationCode($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $verificationCode = '';
+    for ($i = 0; $i < $length; $i++) {
+        $verificationCode .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $verificationCode;
+}
 
 if ($requestMethod == "POST") {
     if (isset($_POST['Process']) && $_POST['Process'] == "Login") {
@@ -61,9 +70,26 @@ if ($requestMethod == "POST") {
         $password = htmlentities($_POST['password']);
         $confirm_password = htmlentities($_POST['confirm_password']);
         $image = isset($_FILES['image']) ? $_FILES['image'] : null;
+        $emailVerified = htmlentities($_POST['emailVerified']);
         
-        $register = new Register($username, $email, $password, $confirm_password, $image);
+        $register = new Register($username, $email, $password, $confirm_password, $image, $emailVerified);
         $register->checkFields();
+    }
+
+    
+
+    if(isset($_POST['Process']) && $_POST['Process'] == "Send_code") {
+        $email = htmlentities($_POST['email']) ?? null;
+        $verificationCode = generateVerificationCode();
+        $register = new Register();
+        $register->sendVerificationEmail($email, $verificationCode);
+    }
+
+    if(isset($_POST['Process']) && $_POST['Process'] == "Verify_code"){
+        $email = htmlentities($_POST['email']) ?? null;
+        $verificationCode = htmlentities($_POST['verification_code']) ?? null;
+        $register = new Register();
+        $register->verifyCode($email, $verificationCode);
     }
 }
 ?>

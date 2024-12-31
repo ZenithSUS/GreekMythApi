@@ -1,19 +1,26 @@
 <?php
 require_once('../api/apiStatus.php');
+require '../vendor/autoload.php'; // Add this line to include PHPMailer autoload file
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 class Register extends Api {
     private $username;
     private $email;
     private $password;
     private $confirm_password;
     private $image;
+    private $emailVerified;
     public $errors = array();
 
-    public function __construct(string $username, string $email, string $password, string $confirm_password, $image){
+    public function __construct(?string $username = null, ?string $email = null, ?string $password = null, ?string $confirm_password = null, $image = null, string $emailVerified = "false"){
         $this->conn = $this->connect();
         $this->username = $username;
         $this->password = $password;
         $this->confirm_password = $confirm_password;
+        $this->image = $image;
         $this->email = $email;
+        $this->emailVerified = $emailVerified;
         $this->image = $image;
     }
 
@@ -34,7 +41,10 @@ class Register extends Api {
             $this->errors['email'] = "Invalid email address";
         } else if($this->emailExists($this->email)) {
             $this->errors['email'] = "Email already exists";
+        } else if($this->emailVerified === "false"){
+            $this->errors['email'] = "Email not verified!";
         }
+
 
         if(empty($this->password) || !isset($this->password)){
             $this->errors['password'] = "Please fill the password";
@@ -84,6 +94,97 @@ class Register extends Api {
             $status = !$stmt ? $this->queryFailed() : $this->created();
             return $status;
         }
+    }
+
+    public function sendVerificationEmail(string $email, string $verification_code) : void {
+        $mail = new PHPMailer(true);
+        try {
+            //Server settings
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'merinojc25@gmail.com';
+            $mail->Password = 'galglubgqbibygqz';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            //Recipients
+            $mail->setFrom('merinojc25@gmail.com', 'GreekMythCMS');
+            $mail->addAddress($email);
+
+            //Content
+            $mail->isHTML(true);
+            $mail->Subject = 'Verification Code';
+            $mail->Body = "Your verification code is: $verification_code";
+
+            $mail->send();
+            $this->storeVerificationCode($email, $verification_code); // Store the verification code in the database
+
+             $response = array(
+                 "status" => 200,
+                 "message" => "Code sent successfully!",
+             );
+             echo json_encode($response);
+        } catch (Exception $e) {
+            // Handle email sending error
+            $this->errors['code'] = 'Send Code Failed!';
+            $response = array(
+                "status" => 422,
+                "message" => "Unprocessable Content",
+                "error" => $this->errors,
+                "details" => $e->getMessage()
+            );
+            echo json_encode($response);
+        }
+    }
+
+    public function verifyCode(string $email, string $verification_code) : void {
+        $sql = "SELECT * FROM verification_codes WHERE email = ? AND code = ?";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt) {
+            $this->errors['code'] = 'Verification Failed!';
+            $response = array(
+                "status" => 422,
+                "message" => "Unprocessable Content",
+                "error" => $this->errors
+            );
+            echo json_encode($response);
+            return;
+        }
+
+        $stmt->bind_param('ss', $email, $verification_code);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if($result->num_rows > 0) {
+            $this->emailVerified = "true";
+            $response = array(
+                "status" => 200,
+                "message" => "Email verified successfully!",
+            );
+        } else {
+            $this->errors['code'] = 'Invalid verification code!';
+            $response = array(
+                "status" => 422,
+                "message" => "Unprocessable Content",
+                "error" => $this->errors
+            );
+        }
+        echo json_encode($response);
+    }
+
+    private function storeVerificationCode(string $email, string $verification_code) : void {
+        $sql = "INSERT INTO verification_codes (id, email, code) VALUES (UUID(), ?, ?)";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt) {
+            $this->errors['code'] = 'Failed to store verification code!';
+            return;
+        }
+
+        $stmt->bind_param('ss', $email, $verification_code);
+        $stmt->execute();
     }
 
     private function insertAdminSettings(?string $id = null) : void {
