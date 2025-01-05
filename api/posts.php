@@ -3,9 +3,20 @@ include_once('headers.php');
 require_once('../queries/posts.php');
 require_once('verifyToken.php');
 
-$headers = getallheaders();
-$posts = new Posts();
+if (function_exists('getallheaders')) {
+    $headers = getallheaders();
+} elseif (function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+} else {
+    $headers = [];
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+}
 
+$posts = new Posts();
 
 $token = $headers['Authorization'] ?? null;
 if(isset($headers['Authorization'])){

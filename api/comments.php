@@ -3,7 +3,19 @@ include_once('headers.php');
 require_once('../queries/comments.php');
 require_once('verifyToken.php');
 
-$headers = getallheaders();
+if (function_exists('getallheaders')) {
+    $headers = getallheaders();
+} elseif (function_exists('apache_request_headers')) {
+    $headers = apache_request_headers();
+} else {
+    $headers = [];
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $headers['Authorization'] = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    }
+}
+
 $commments = new Comments();
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];

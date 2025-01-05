@@ -8,14 +8,16 @@ class Recover extends Api {
     private $email;
     private $password;
     private $confirm_password;
+    private $emailVerified;
     public $errors = array();
 
     // Constructor to initialize email, password, and confirm_password
-    public function __construct(?string $email = null, ?string $password = null, ?string $confirm_password = null){
+    public function __construct(?string $email = null, ?string $password = null, ?string $confirm_password = null, string $emailVerified = "false"){
         $this->conn = $this->connect();
         $this->email = $email;
         $this->password = $password;
         $this->confirm_password = $confirm_password;
+        $this->emailVerified = $emailVerified;
     }
 
     // Function to send verification email
@@ -118,6 +120,7 @@ class Recover extends Api {
         $result = $stmt->get_result();
 
         if($result->num_rows > 0) {
+            $this->deleteVerificationCode($email);
             $response = array(
                 "status" => 200,
                 "message" => "Email verified successfully!",
@@ -134,22 +137,25 @@ class Recover extends Api {
     }
 
     // Function to recover account
-    public function recoverAcc() : void {
+    public function recoverAcc() : string {
         $this->checkRecoverFields();
 
         if(!empty($this->errors)){
-            echo $this->queryFailed("Edit", $this->errors);
+            return $this->queryFailed("Edit", $this->errors);
         }
 
         $sql = $this->recoverAccQuery();
         $stmt = $this->conn->prepare($sql);
 
         if(!$stmt){
-            echo $this->queryFailed();
-        }
-
+            return $this->queryFailed();
+        } 
+        
         $this->password = password_hash($this->password, PASSWORD_DEFAULT);
         $stmt->bind_param('ss', $this->password, $this->email);
+        $stmt->execute();
+        return $stmt->affected_rows > 0 ? $this->editedResource() : $this->notFound();
+
     }
 
     // Function to verify email
@@ -166,7 +172,7 @@ class Recover extends Api {
         $result = $stmt->get_result();
 
         if($result->num_rows > 0){
-            return $this->emailVerified();
+            return $this->emailVerified($email);
         }
 
         if(empty($email) || is_null($email)){
@@ -184,6 +190,8 @@ class Recover extends Api {
             $this->errors['email'] = "Please fill the email";
         } else if (!$this->validateEmail($this->email)) {
             $this->errors['email'] = "Invalid email address";
+        } else if($this->emailVerified === "false"){
+            $this->errors['email'] = "Email not verified!";
         }
 
         if(empty($this->password) || !isset($this->password)){
@@ -212,6 +220,18 @@ class Recover extends Api {
         }
 
         $stmt->bind_param('ss', $email, $verification_code);
+        $stmt->execute();
+    }
+
+    private function deleteVerificationCode(string $email) : void {
+        $sql = "DELETE FROM verification_codes WHERE email = ?";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt){
+            echo $this->queryFailed();
+        }
+
+        $stmt->bind_param('s', $email);
         $stmt->execute();
     }
 

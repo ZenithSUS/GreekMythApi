@@ -145,10 +145,11 @@ class Api extends Database {
         return json_encode($response);
     }
 
-    protected function emailVerified() : string {
+    protected function emailVerified(string $email = null) : string {
         $response = array(
             "status" => 200,
-            "message" => "Email Verified!"
+            "message" => "Email Verified!",
+            "data" => $email
         );
         return json_encode($response);
     }

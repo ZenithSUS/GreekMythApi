@@ -70,7 +70,7 @@ if ($requestMethod == "POST") {
         $password = htmlentities($_POST['password']);
         $confirm_password = htmlentities($_POST['confirm_password']);
         $image = isset($_FILES['image']) ? $_FILES['image'] : null;
-        $emailVerified = htmlentities($_POST['emailVerified']);
+        $emailVerified = htmlentities($_POST['emailVerified']) > 0 ? htmlentities($_POST['emailVerified']) : null;
         
         $register = new Register($username, $email, $password, $confirm_password, $image, $emailVerified);
         $register->checkFields();
@@ -119,8 +119,9 @@ if ($requestMethod == "POST") {
         $email = htmlentities($_POST['email']) ?? null;
         $password = htmlentities($_POST['password']) ?? null;
         $confirm_password = htmlentities($_POST['confirm_password']) ?? null;
-        $recover = new Recover($email, $password, $confirm_password);
-        $recover->recoverAcc();
+        $emailVerified = htmlentities($_POST['emailVerified']) > 0 ? htmlentities($_POST['emailVerified']) : null;
+        $recover = new Recover($email, $password, $confirm_password, $emailVerified);
+        echo $recover->recoverAcc();
     }
 }
 ?>

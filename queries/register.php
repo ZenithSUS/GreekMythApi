@@ -194,6 +194,7 @@ class Register extends Api {
 
         if($result->num_rows > 0) {
             $this->emailVerified = "true";
+            $this->deleteVerificationCode($email);
             $response = array(
                 "status" => 200,
                 "message" => "Email verified successfully!",
@@ -220,6 +221,18 @@ class Register extends Api {
         }
 
         $stmt->bind_param('ss', $email, $verification_code);
+        $stmt->execute();
+    }
+
+    private function deleteVerificationCode(string $email) : void {
+        $sql = "DELETE FROM verification_codes WHERE email = ?";
+        $stmt = $this->conn->prepare($sql);
+
+        if(!$stmt){
+            echo $this->queryFailed();
+        }
+
+        $stmt->bind_param('s', $email);
         $stmt->execute();
     }
 
