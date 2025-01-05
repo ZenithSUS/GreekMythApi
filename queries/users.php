@@ -2,10 +2,13 @@
 require_once('../api/apiStatus.php');
 class Users extends Api {
     protected $errors = array();
+
+    // Constructor to initialize database connection
     public function __construct(){
         $this->conn = $this->connect();
     }
 
+    // Function to get admin information by ID
     public function getAdminInfo(string $id) : string {
         $sql = "SELECT admin_users.username, admin_users.image_src, admin_users.email, admin_settings.dark_mode
         FROM Admin_Users 
@@ -29,8 +32,8 @@ class Users extends Api {
         }
     }
 
+    // Function to change admin password
     public function changeAdminPassword(string $id, ?string $newPassword = null, ?string $confirmNewPassword = null) : string {
-       
         $this->checkPasswordFields($id, $newPassword, $confirmNewPassword);
         if(!empty($this->errors)){
             return $this->queryFailed("Edit", $this->errors);
@@ -49,6 +52,7 @@ class Users extends Api {
         return $stmt->affected_rows > 0 ? $this->editedResource() : $this->queryFailed();
     }
 
+    // Function to get all users with pagination
     public function getAllUsers(int $limit = 0, int $offset = 0) : string {
         $sql = $this->BuildUserQuery(null, $limit, $offset);
         $stmt = $this->conn->prepare($sql);
@@ -68,6 +72,7 @@ class Users extends Api {
         }
     }
 
+    // Function to get user by ID
     public function getUser(string $id) : string {
         $sql = $this->BuildUserQuery($id);
         $stmt = $this->conn->prepare($sql);
@@ -88,6 +93,7 @@ class Users extends Api {
         }
     }
 
+    // Function to build user query based on parameters
     private function BuildUserQuery(string $id = null, int $limit = 0, int $offset = 0) : string {
         if(isset($id) && $id !== null) {
             return "SELECT users.username, users.email, users.bio, users.profile_pic, users.joined_at, 
@@ -115,6 +121,7 @@ class Users extends Api {
         GROUP BY users.user_id";
     }
 
+    // Function to get total pages for users
     private function getTotalPageUser(int $limit) : int {
         $sql = "SELECT COUNT(*) FROM users";
         $stmt = $this->conn->prepare($sql);
@@ -131,15 +138,15 @@ class Users extends Api {
         }
         return 0;
     }
-    
 
+    // Function to edit user information
     public function editUser(string $id, ?string $username = null, ?string $email = null, string $type, $image = null) : string {
         $this->checkFields($username, $email, $type);
         if(!empty($this->errors)){
             return $this->queryFailed("Edit", $this->errors);
         }
 
-        // Check Username Exists
+        // Check if username exists
         $sql = $this->getUsernameQuery($type);
         $Exists = $this->existsUsernameOrEmail($id, $sql, $username);
         
@@ -147,7 +154,7 @@ class Users extends Api {
             $errors['usernameEdit'] = "Username already exists";
         }
 
-        // Check Username Exists
+        // Check if email exists
         $sql = $this->getEmailQuery($type);
         $Exists = $this->existsUsernameOrEmail($id, $sql, $email);
         
@@ -179,7 +186,6 @@ class Users extends Api {
             return $this->queryFailed("Edit", $this->errors);
         }
 
-
         $sql = $this->getUserInfoQuery($type);
         $stmt = $this->conn->prepare($sql);
 
@@ -191,7 +197,7 @@ class Users extends Api {
         $result = $stmt->get_result();
         $row = $result->fetch_assoc();
 
-        // Check username and email fields
+        // Check if username and email fields are the same
         if($row['username'] === $username && $row['email'] === $email){
             $errors['status'] = "Please edit information";
         }
@@ -204,6 +210,7 @@ class Users extends Api {
         return $this->notFound();
     }
 
+    // Function to check delete account password fields
     public function check_Delete_Account_PasswordFields(string $id, ?string $password = null, ?string $confirmPassword = null) : string {
         $this->check_Admin_Delete_Password_Fields($password, $confirmPassword);
         if(!empty($this->errors)){
@@ -221,6 +228,7 @@ class Users extends Api {
         return $this->success();
     }
 
+    // Function to delete admin user
     public function deleteAdminUser(string $id) : string {
         $sql = "SELECT image_src FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -245,6 +253,7 @@ class Users extends Api {
         return $this->notFound(); 
     }
 
+    // Function to delete admin user query
     private function deleteAdminUserQuery(string $id) {
         $sql = "DELETE FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -254,6 +263,7 @@ class Users extends Api {
         return $stmt->affected_rows > 0 ? $this->deletedResource() : $this->notFound();
     }
 
+    // Function to delete user
     public function deleteUser(string $id) : string {
         $sql = "SELECT profile_pic FROM users WHERE user_id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -277,6 +287,7 @@ class Users extends Api {
         return $this->notFound();  
     }
 
+    // Function to change admin theme
     public function changeThemeAdmin(string $id, ?string $type = null, ?string $fontstyle = null) : string {
         $sql = $this->changeThemeAdminQuery($type);
         $stmt = $this->conn->prepare($sql);
@@ -290,17 +301,22 @@ class Users extends Api {
         return $stmt->affected_rows > 0 ? $this->editedResource() : $this->queryFailed();
     }
 
+    // Function to get user info query based on type
     private function getUserInfoQuery(string $type) : string {
         return $type === "user" ? "SELECT username, email FROM users WHERE user_id = ?" : "SELECT username, email FROM admin_users WHERE id = ?";
     }
 
+    // Function to get username query based on type
     private function getUsernameQuery(string $type) : string {
         return $type === "user" ? "SELECT username FROM users WHERE user_id != ? AND username = ?" : "SELECT username FROM admin_users WHERE id != ? AND username = ?";
     }
+
+    // Function to get email query based on type
     private function getEmailQuery(string $type) : string {
         return $type === "user" ? "SELECT email FROM users WHERE user_id != ? AND email = ?" : "SELECT email FROM admin_users WHERE id != ? AND email = ?";
     }
 
+    // Function to check if username or email exists
     private function existsUsernameOrEmail(string $id, string $sql, string $username) : bool {
         $stmt = $this->conn->prepare($sql);
 
@@ -314,6 +330,7 @@ class Users extends Api {
         return $result->num_rows > 0 ? true : false;
     }
 
+    // Function to edit user query based on type
     private function editUserQuery(string $type) : string {
         if($type === "user"){
             return "UPDATE users 
@@ -326,6 +343,7 @@ class Users extends Api {
             WHERE id = ?";
     }
 
+    // Function to delete user query
     private function deleteUserQuery(string $id){
         $sql = "DELETE FROM users WHERE user_id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -337,6 +355,7 @@ class Users extends Api {
         return $stmt->execute() ? $this->deletedResource() : $this->notFound();    
     }
 
+    // Function to check fields for username and email
     private function checkFields(?string $username = null, ?string $email = null, string $type) : void {
         // Check if username is not empty
         if (empty($username) || $username === null) {
@@ -349,12 +368,13 @@ class Users extends Api {
         // Check if email is not empty
         if (empty($email) || $email === null) {
             $this->errors['emailEdit'] = "Please fill the email";
-        // Check if email is valis
+        // Check if email is valid
         } else if (!$this->checkEmail($email)){
             $this->errors['emailEdit'] = "Please enter a valid email";
         }
     }
 
+    // Function to check password fields for changing password
     private function checkPasswordFields(string $id, ?string $newPassword = null, ?string $confirmNewPassword = null) : void {
         // Check if new password is empty 
         if(empty($newPassword) && $newPassword === null) {
@@ -384,6 +404,7 @@ class Users extends Api {
         }
     }
 
+    // Function to check password fields for deleting account
     private function check_Admin_Delete_Password_Fields(?string $password = null, ?string $confirmPassword = null) : void {
         // Check if new password is empty 
         if(empty($password) && $password === null) {
@@ -401,6 +422,7 @@ class Users extends Api {
         }
     }
 
+    // Function to check if the new password is the same as the current password
     private function currentPassword(string $id, string $newPassword) : bool {
         $sql = "SELECT password FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -415,6 +437,7 @@ class Users extends Api {
         return password_verify($newPassword, $row['password']) ? true : false;
     }
 
+    // Function to verify password
     private function verifyPassword(string $id, string $password) : bool {
         $sql = "SELECT password FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);
@@ -429,20 +452,24 @@ class Users extends Api {
         return password_verify($password, $row['password']) ? true : false;
     }
 
+    // Function to get change password query
     private function changePasswordQuery() : string {
         return "UPDATE admin_users SET password = ? WHERE id = ?";
     }
 
+    // Function to get change theme admin query
     private function changeThemeAdminQuery(?string $type) : string {
         $switch = $type === "dark" ? 1 : 0;
         return "UPDATE admin_settings SET dark_mode = $switch, font_style = ? WHERE admin_id = ?";
     }
 
+    // Function to check if email is valid
     private function checkEmail(string $email) : bool{
         $status = filter_var($email, FILTER_VALIDATE_EMAIL) ? true : false;
         return $status;
     }
 
+    // Function to validate username
     private function validateUsername(array $username) : bool {
         foreach(array_keys($username) as $hastype){
             $status = $hastype ? true : false;
@@ -450,6 +477,7 @@ class Users extends Api {
         return $status;
     }
 
+    // Function to check username based on type
     private function checkUsername(string $username, string $type) : array {
         $upperCase = !preg_match('/[A-Z]/', $username); 
         $lowerCase = !preg_match('/[a-z]/', $username); 
@@ -468,14 +496,15 @@ class Users extends Api {
         return $errors;
     }
 
+    // Function to validate admin password
     private function validateAdminPassword(array $password) : bool {
-  
         foreach (array_keys($password) as $hasType){
             $status = $hasType ? true : false;
         }
         return $status;
     }
 
+    // Function to check admin password
     private function checkAdminPassword(string $newPassword) : array {
         $uppercase = preg_match('/[A-Z]/', $newPassword);
         $lowercase = preg_match('/[a-z]/', $newPassword);
@@ -490,6 +519,7 @@ class Users extends Api {
        ];
     }
 
+    // Function to change user image
     private function changeImage(string $id, $image = null) : bool {
         if($image === null){
             return false;
@@ -518,7 +548,6 @@ class Users extends Api {
             $this->errors['imageEdit'] = 'Image size too big!';
         }
 
-
         if(!empty($this->errors)){
             return false;
         }
@@ -542,6 +571,7 @@ class Users extends Api {
         return $stmt->affected_rows > 0 ? true : false;
     }
 
+    // Function to delete existing image
     private function deleteExistingImage(string $id) : void {
         $sql = "SELECT image_src FROM admin_users WHERE id = ?";
         $stmt = $this->conn->prepare($sql);

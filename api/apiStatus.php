@@ -126,7 +126,7 @@ class Api extends Database {
     }
     
 
-    public function regError(array $errors) : string {
+    protected function regError(array $errors) : string {
         $response = array(
             "status" => 422,
             "message" => "Unprocessable Content",
@@ -136,12 +136,20 @@ class Api extends Database {
         return json_encode($response);
     }
 
-    public function created() : string {
+    protected function created() : string {
         $response = array(
             "status" => 201,
             "message" => "Resource Created"
         );
         header("HTTP/1.1 201 Resource Created");
+        return json_encode($response);
+    }
+
+    protected function emailVerified() : string {
+        $response = array(
+            "status" => 200,
+            "message" => "Email Verified!"
+        );
         return json_encode($response);
     }
 }

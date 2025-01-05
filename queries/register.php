@@ -115,7 +115,42 @@ class Register extends Api {
             //Content
             $mail->isHTML(true);
             $mail->Subject = 'Verification Code';
-            $mail->Body = "Your verification code is: $verification_code";
+            $mail->Body = "
+                <html>
+                <head>
+                    <style>
+                        .container {
+                            font-family: Arial, sans-serif;
+                            text-align: center;
+                            padding: 20px;
+                            border: 1px solid #ddd;
+                            border-radius: 10px;
+                            background-color: #f9f9f9;
+                        }
+                        .code {
+                            font-size: 24px;
+                            font-weight: bold;
+                            color: #333;
+                        }
+                        .footer {
+                            margin-top: 20px;
+                            font-size: 12px;
+                            color: #777;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Verification Code</h2>
+                        <p>Your verification code is:</p>
+                        <p class='code'>$verification_code</p>
+                        <div class='footer'>
+                            <p>If you did not request this code, please ignore this email.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            ";
 
             $mail->send();
             $this->storeVerificationCode($email, $verification_code); // Store the verification code in the database
@@ -173,6 +208,7 @@ class Register extends Api {
         }
         echo json_encode($response);
     }
+
 
     private function storeVerificationCode(string $email, string $verification_code) : void {
         $sql = "INSERT INTO verification_codes (id, email, code) VALUES (UUID(), ?, ?)";
@@ -332,5 +368,4 @@ class Register extends Api {
         }
     }
 }
-
 ?>

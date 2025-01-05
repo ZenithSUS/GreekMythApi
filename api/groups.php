@@ -3,7 +3,7 @@ include_once('headers.php');
 require_once('../queries/groups.php');
 require_once('verifyToken.php');
 
-$headers = apache_request_headers();
+$headers = getallheaders();
 $groups = new Groups();
 
 $requestMethod = $_SERVER['REQUEST_METHOD'];

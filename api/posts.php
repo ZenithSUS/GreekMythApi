@@ -3,7 +3,7 @@ include_once('headers.php');
 require_once('../queries/posts.php');
 require_once('verifyToken.php');
 
-$headers = apache_request_headers();
+$headers = getallheaders();
 $posts = new Posts();
 
 

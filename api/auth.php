@@ -2,8 +2,9 @@
 include_once('headers.php');
 require_once('../queries/login.php');
 require_once('../queries/register.php');
+require_once('../queries/recover.php');
 
-$headers = apache_request_headers();
+$headers = getallheaders();
 $token = $headers['Authorization'] ?? null;
 
 if (isset($token)) {
@@ -64,7 +65,6 @@ if ($requestMethod == "POST") {
     }
 
     if (isset($_POST['Process']) && $_POST['Process'] == "Register") {
-        // Handle the registration logic
         $username = htmlentities($_POST['username']);
         $email = htmlentities($_POST['email']);
         $password = htmlentities($_POST['password']);
@@ -76,20 +76,51 @@ if ($requestMethod == "POST") {
         $register->checkFields();
     }
 
-    
-
     if(isset($_POST['Process']) && $_POST['Process'] == "Send_code") {
         $email = htmlentities($_POST['email']) ?? null;
         $verificationCode = generateVerificationCode();
-        $register = new Register();
-        $register->sendVerificationEmail($email, $verificationCode);
+        $type = htmlentities($_POST['type']) ?? null;
+
+        if($type === "register") {
+            $register = new Register();
+            $register->sendVerificationEmail($email, $verificationCode);
+        }
+
+        if($type === "recover") {
+            $recover = new Recover();
+            $recover->sendVerificationEmail($email, $verificationCode);
+        }   
     }
 
     if(isset($_POST['Process']) && $_POST['Process'] == "Verify_code"){
         $email = htmlentities($_POST['email']) ?? null;
+        $type = htmlentities($_POST['type']) ?? null;
         $verificationCode = htmlentities($_POST['verification_code']) ?? null;
-        $register = new Register();
-        $register->verifyCode($email, $verificationCode);
+        
+        if($type === "register") {
+            $register = new Register();
+            $register->verifyCode($email, $verificationCode);
+        }
+
+        if($type === "recover") {
+            $recover = new Recover();
+            $recover->verifyCode($email, $verificationCode);
+        }
+        
+    }
+
+    if(isset($_POST['Process']) && $_POST['Process'] == "Verify_email"){
+        $email = htmlentities($_POST['email']) ?? null;
+        $recover = new Recover();
+        echo $recover->verifyEmail($email);
+    }
+
+    if(isset($_POST['Process']) && $_POST['Process'] == "Recover"){
+        $email = htmlentities($_POST['email']) ?? null;
+        $password = htmlentities($_POST['password']) ?? null;
+        $confirm_password = htmlentities($_POST['confirm_password']) ?? null;
+        $recover = new Recover($email, $password, $confirm_password);
+        $recover->recoverAcc();
     }
 }
 ?>
