@@ -3,9 +3,15 @@ require_once('../config.php');
 class Api extends Database {
     protected $conn;
     protected $imagePath = [
-        "default_users" => "C:/xampp/htdocs/GreekMyth/img/default.jpg",
-        "default_gods" => "C:/xampp/htdocs/GreekMyth/img/hero.png",
-        "admins" => "C:/xampp/htdocs/GreekMyth/img/admin/", 
+        "default_users" => "/GreekMyth/img/default.jpg",
+        "default_gods" => "/GreekMyth/img/hero.png",
+        "admins" => "/GreekMyth/img/admin/", 
+        "gods" => "/GreekMyth/img/gods/",
+        "users" => "/GreekMyth/img/u/"
+    ];
+
+    protected $imageConfig = [
+        "admins" => "C:/xampp/htdocs/GreekMyth/img/admin/",
         "gods" => "C:/xampp/htdocs/GreekMyth/img/gods/",
         "users" => "C:/xampp/htdocs/GreekMyth/img/u/"
     ];
@@ -75,10 +81,11 @@ class Api extends Database {
         if ($type === "groups") {
             $i = 0;
             while (isset($row[$i])) {
+                $row[$i]['description'] = mb_convert_encoding($row[$i]['description'], 'UTF-8', 'UTF-8');
                 if (!empty($row[$i]['image_url'])) { 
                     $row[$i]['image_url'] = $this->imagePath['gods'] . $row[$i]['image_url'];
                 } else {
-                    $row[$i]['image_url'] = $this->imagePath['default_gods'] . $row[$i]['image_url'];
+                    $row[$i]['image_url'] = $this->imagePath['default_gods'];
                 }
                 $i++;
             }

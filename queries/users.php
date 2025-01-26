@@ -245,7 +245,7 @@ class Users extends Api {
 
         if($result->num_rows > 0){
             if($image !== null){
-                unlink($this->imagePath['admins'] . $image);
+                unlink($this->imageConfig['admins'] . $image);
             } 
             $stmt->close();
             return $this->deleteAdminUserQuery($id);
@@ -279,7 +279,7 @@ class Users extends Api {
 
         if($result->num_rows > 0){
             if($image !== null){
-                unlink($this->imagePath['users'] . $image);
+                unlink($this->imageConfig['users'] . $image);
             } 
             $stmt->close();
             return $this->deleteUserQuery($id);
@@ -532,7 +532,7 @@ class Users extends Api {
         $fileExt = explode('.', $fileName);
         $fileActualExt = strtolower(end($fileExt));
         $fileNameNew = uniqid('', true) . "." . $fileActualExt;
-        $targetDirectory = 'C:/xampp/htdocs/GreekMyth/img/admin/' . $fileNameNew; 
+        $targetDirectory = $this->imageConfig['admins'] . $fileNameNew; 
         
         $allowed = array("jpeg", "png", "jpg");
     
@@ -588,7 +588,7 @@ class Users extends Api {
 
         if($result->num_rows > 0){
             if($image !== null){
-                unlink($this->imagePath['admins'] . $image);
+                unlink($this->imageConfig['admins'] . $image);
             } 
         }
     }
